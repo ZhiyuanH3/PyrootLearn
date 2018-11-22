@@ -5,30 +5,28 @@ import random
 
 n_event = 1000
 
-#mean = 0.5
-#stdd = 0.5
-#gs   = random.gauss
-#gs(mean,stdd)
-
-uni = np.random.uniform
+#uni = np.random.uniform
 
 # create the dataframe and fill it with some random stuff
 df1           = pd.DataFrame()
-df1['prob']   = uni(0,1,n_event) 
+df1['n']      = np.array([1,2,2,3,3,3,4,4,4,4])#np.ones(n_event-500) * n_event#np.random.randint(0,100,n_event)
+#df1['prob']   = uni(0,1,n_event) 
 df1['weight'] = 0.01 
 
 df2           = pd.DataFrame()
-df2['prob']   = uni(0,1,n_event) 
+df2['n']      = np.array([1,1,1,1,1,2,2,2,2,2,3,3,3,3,3,4,4,4,4,4])#np.ones(n_event) * n_event
+#df2['prob']   = uni(0,1,n_event) 
 df2['weight'] = 0.5
 
+print df1[:8]
 print df2[:8]
 # create list of tuples from the dataframe
 tuple_list1 = list(df1.itertuples(index=False))
 tuple_list2 = list(df2.itertuples(index=False))
 
 # create the demanding recarray with field structure
-array1 = np.array(tuple_list1, dtype=[('prob', float), ('weight', float)]) 
-array2 = np.array(tuple_list2, dtype=[('prob', float), ('weight', float)])
+array1 = np.array(tuple_list1, dtype=[('n', float), ('weight', float)]) 
+array2 = np.array(tuple_list2, dtype=[('n', float), ('weight', float)])
 #print array2
 
 
@@ -48,3 +46,72 @@ tree2 = array2tree(array2, name='tree44')
 # Or write directly into a ROOT file without using PyROOT
 # this line is not necessary for this task (leave it here for completeness)
 #array2root(array1, 'f3.root', 'tree44')
+
+
+
+
+
+
+
+from ROOT import TGraphAsymmErrors as GAE
+from ROOT import TH1F, TChain
+import time
+
+#tree1.Draw('n')
+#time.sleep(4)
+#tree2.Draw('n')
+#time.sleep(4)
+
+#h_after_selection  = TH1F('h_after_selection','h_after_selection',100,0,1)
+h_after_selection  = TH1F('h_after_selection','h after selection',4,1,5)
+h_after_selection.Sumw2()
+#h_before_selection = TH1F('h before selection','h before selection',100,0,1)
+h_before_selection = TH1F('h_before_selection','h before selection',4,1,5)
+h_before_selection.Sumw2()
+
+tree1.Project('h_after_selection', 'n')
+tree2.Project('h_before_selection', 'n')
+
+
+#h_after_selection.Draw()
+#time.sleep(11)
+
+
+"""
+h_efficiency = h_after_selection
+h_efficiency.Divide(h_after_selection,h_before_selection,1.0,1.0,"B")
+#h_efficiency = h_before_selection
+#h_efficiency.Divide(h_before_selection,h_after_selection,1.0,1.0,"B")
+h_efficiency.Draw()
+time.sleep(11)
+"""
+
+
+
+g_efficiency = GAE()#ROOT.TGraphAsymmErrors()
+g_efficiency.Divide(h_after_selection, h_before_selection, "cl=0.683 b(1,1) mode")
+#g_efficiency.Divide(h_before_selection, h_after_selection, "cl=0.683 b(1,1) mode")
+
+from tools import DrawErrorBand
+#DrawErrorBand(g_efficiency)
+
+#"""
+g_efficiency.SetTitle('efficiency')
+g_efficiency.SetFillColor(5)
+
+g_efficiency.SetMarkerStyle(21)
+g_efficiency.SetMarkerColor(4)
+
+g_efficiency.Draw('ALP')
+#g_efficiency.Draw('3A')
+#"""
+
+
+time.sleep(111)
+
+
+
+
+
+
+
