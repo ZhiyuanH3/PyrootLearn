@@ -2,16 +2,36 @@
 import pandas as pd
 import numpy  as np
 import random 
+from sklearn.externals   import joblib
 
 n_event = 1000
+n_scan  = 1000
+n_bins  = 100
+bin_i   = 0
+bin_f   = 1
+pth     = '/beegfs/desy/user/hezhiyua/LLP/bdt_output/result/Lisa/temp/'
+
+#joblib.dump(smallerDF_s   ,pth+'/dumps/s.pkl'  )
+#joblib.dump(smallerDF_b   ,pth+'/dumps/b.pkl'  )
+#joblib.dump(sortedProbList,pth+'/dumps/spl.pkl')
 
 #uni = np.random.uniform
+
+load_s = joblib.load(pth+'/dumps/s.pkl')
+load_b = joblib.load(pth+'/dumps/b.pkl')
+
+print load_s
+
+
+
+
+
 
 # create the dataframe and fill it with some random stuff
 df1           = pd.DataFrame()
 df1['n']      = np.array([1,2,2,3,3,3,4,4,4,4])#np.ones(n_event-500) * n_event#np.random.randint(0,100,n_event)
 #df1['prob']   = uni(0,1,n_event) 
-df1['weight'] = 0.1 
+df1['weight'] = 0.8
 
 df2           = pd.DataFrame()
 df2['n']      = np.array([1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4])#np.ones(n_event) * n_event
@@ -19,7 +39,7 @@ df2['n']      = np.array([1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,
 df2['weight'] = 0.5
 
 df3           = pd.DataFrame()
-df3['n']      = np.array([1,1,1,2,2,3,3,3,4])
+df3['n']      = np.array([1,1,1,1,2,2,2,3,3,4])
 df3['weight'] = 0.2
 
 
@@ -70,11 +90,11 @@ import time
 #tree2.Draw('n')
 #time.sleep(4)
 
-#h_after_selection  = TH1F('h_after_selection','h_after_selection',100,0,1)
-h_after_selection  = TH1F('h_after_selection','h after selection',4,1,5)
+h_after_selection  = TH1F('h_after_selection','h after selection',n_bins,bin_i,bin_f)
+#h_after_selection  = TH1F('h_after_selection','h after selection',4,1,5)
 #h_after_selection.Sumw2()
-#h_before_selection = TH1F('h before selection','h before selection',100,0,1)
-h_before_selection = TH1F('h_before_selection','h before selection',4,1,5)
+h_before_selection = TH1F('h_before_selection','h before selection',n_bins,bin_i,bin_f)
+#h_before_selection = TH1F('h_before_selection','h before selection',4,1,5)
 #h_before_selection.Sumw2()
 
 #print tree1.GetWeight()
@@ -91,17 +111,69 @@ print c1.GetWeight()
 c1.Project('h_after_selection','n')
 """
 
-tree1.Project('h_after_selection' , 'n')
-tree3.Project('h_after_selection' , 'n')
-tree2.Project('h_before_selection', 'n')
+#tree1.Project('h_after_selection' , 'n')
+#tree3.Project('h_after_selection' , 'n')
+#tree2.Project('h_before_selection', 'n')
+
+#h_after_selection.Scale()
+
+
+
+
+"""
+#>>>>>>>test:
+for i in range( len(df1) ):
+    h_after_selection.Fill(df1['n'][i], 0.5)
+
+for i in range( len(df3) ):
+    h_after_selection.Fill(df3['n'][i], 0.5)
+"""
+
+
+
+
+#for i in range( len(load_s) ):
+#    h_after_selection.Fill(load_s['signal'][i], load_s['weight'][i])
+
+
+print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>filling histogram...'
+cc = 0
+for index, row in load_b.iterrows():
+    if cc == n_scan: break
+    h_after_selection.Fill( row['signal'])
+    cc += 1
 
 #h_after_selection.Draw()
 #time.sleep(4)
+bin_width = (bin_f - bin_i) / float(n_bins)
+bin_list = [ i*bin_width + bin_i for i in range(n_bins)]
+    
+
+for bin_i in bin_list:
+    h_before_selection.SetBinContent(bin_i, n_scan)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 h_after_selection_cum  = h_after_selection.GetCumulative()
 h_after_selection_cum.Sumw2()
-h_after_selection_cum.Draw()
-time.sleep(11)
+#h_after_selection_cum.Draw()
+#time.sleep(11)
 
 
 """
