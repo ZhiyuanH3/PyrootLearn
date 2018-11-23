@@ -5,17 +5,13 @@ import random
 
 n_event = 1000
 
-#uni = np.random.uniform
-
 # create the dataframe and fill it with some random stuff
 df1           = pd.DataFrame()
-df1['n']      = np.array([1,2,2,3,3,3,4,4,4,4])#np.ones(n_event-500) * n_event#np.random.randint(0,100,n_event)
-#df1['prob']   = uni(0,1,n_event) 
+df1['n']      = np.array([1,2,2,3,3,3,4,4,4,4])
 df1['weight'] = 0.1 
 
 df2           = pd.DataFrame()
-df2['n']      = np.array([1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4])#np.ones(n_event) * n_event
-#df2['prob']   = uni(0,1,n_event) 
+df2['n']      = np.array([1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4])
 df2['weight'] = 0.5
 
 df3           = pd.DataFrame()
@@ -51,7 +47,6 @@ tree1 = array2tree(array1, name='tree44')
 tree2 = array2tree(array2, name='tree44')
 tree3 = array2tree(array3, name='tree44')
 # Or write directly into a ROOT file without using PyROOT
-# this line is kind of not necessary for this task (leave it here for completeness)
 array2root(array1, 'eff1.root', 'tree44')
 array2root(array3, 'eff2.root', 'tree44')
 
@@ -78,8 +73,8 @@ h_before_selection = TH1F('h_before_selection','h before selection',4,1,5)
 #h_before_selection.Sumw2()
 
 #print tree1.GetWeight()
-tree1.SetWeight(0.9)#(df1['weight'])
-tree3.SetWeight(0.1)#(df3['weight'])
+tree1.SetWeight(0.9)
+tree3.SetWeight(0.1)
 tree2.SetWeight(1.0)
 #print tree1.GetWeight()
 
@@ -94,6 +89,8 @@ c1.Project('h_after_selection','n')
 tree1.Project('h_after_selection' , 'n')
 tree3.Project('h_after_selection' , 'n')
 tree2.Project('h_before_selection', 'n')
+
+#h_after_selection.Scale()
 
 #h_after_selection.Draw()
 #time.sleep(4)
@@ -115,7 +112,7 @@ time.sleep(11)
 
 
 
-g_efficiency = GAE()#ROOT.TGraphAsymmErrors()
+g_efficiency = GAE()
 g_efficiency.Divide(h_after_selection_cum, h_before_selection, "cl=0.683 b(1,1) mode")
 
 #from tools import DrawErrorBand
