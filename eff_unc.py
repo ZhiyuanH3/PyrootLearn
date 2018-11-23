@@ -112,17 +112,6 @@ for j in range(n_bins):
 
 
 
-###############
-#
-#
-# check/put two together into roc
-#
-#
-###############
-
-
-
-
 g_efficiency = GAE()
 g_tpr        = GAE()
 
@@ -135,9 +124,9 @@ g_efficiency.SetTitle('efficiency')
 g_efficiency.SetFillColor(5)
 g_efficiency.SetMarkerStyle(21)
 g_efficiency.SetMarkerColor(4)
-g_efficiency.Draw('ALP')
+#g_efficiency.Draw('ALP')
 #g_efficiency.Draw('3A')a
-slp(33)
+#slp(33)
 
 g_tpr.SetTitle('True Positive Rate')
 g_tpr.SetFillColor(5)
@@ -153,22 +142,33 @@ g_tpr.SetMarkerColor(4)
 
 from ROOT import Double
 
-g_size = g_efficiency.GetN()
+g_size   = g_efficiency.GetN()
+g_size_s = g_tpr.GetN()
+
 
 x  = Double()
 y  = Double()
 
+
+x_s  = Double()
+y_s  = Double()
+
 arr_x = np.zeros(g_size)
 arr_y = np.zeros(g_size)
+
+arr_x_s = np.zeros(g_size_s)
+arr_y_s = np.zeros(g_size_s)
 
 for i in range( g_size ):
     g_efficiency.GetPoint(i,x,y)
     arr_x[i] = x 
     arr_y[i] = y
-    #print 'x: '   , x
-    #print 'y: '   , y
 #print arr_y
 
+for i in range( g_size_s ):
+    g_tpr.GetPoint(i,x_s,y_s)
+    arr_x_s[i] = x_s 
+    arr_y_s[i] = y_s
 
 # GetEYhigh() work as the following 3 ways(presumably the 'copy' version works most consistently):
 #----------------------------------------------V1
@@ -189,6 +189,15 @@ arr_h      = np.array(buffer_h, copy=True)
 #print len(arr_l)
 
 
+buffer_l_s   = g_tpr.GetEYlow()
+buffer_l_s.SetSize(g_size_s)
+arr_l_s      = np.array(buffer_l_s, copy=True)
+
+buffer_h_s   = g_tpr.GetEYhigh()
+buffer_h_s.SetSize(g_size_s)
+arr_h_s      = np.array(buffer_h_s, copy=True)
+print len(arr_h)
+print len(arr_l)
 
 
 
@@ -196,3 +205,77 @@ arr_h      = np.array(buffer_h, copy=True)
 
 
 
+
+
+
+
+
+
+
+
+from ROOT import TCanvas
+from ROOT import TVectorT
+from array import array
+
+c1 = TCanvas('c1', 'Graph with asymmetric error bars', 200, 10, 700, 500)
+c1.SetFillColor(42) 
+c1.SetGrid() 
+c1.GetFrame().SetFillColor(21) 
+c1.GetFrame().SetBorderSize(12) 
+n = 10 
+
+"""
+x=TVectorT('double')
+y=TVectorT('double')
+exl=TVectorT('double')
+eyl=TVectorT('double')
+exh=TVectorT('double')
+eyh=TVectorT('double')
+"""
+
+x=array('d')
+y=array('d')
+exl=array('d')
+eyl=array('d')
+exh=array('d')
+eyh=array('d')
+
+x.append(0.1)
+y.append(0.1)
+exl.append(0.1)
+eyl.append(0.1)
+exh.append(0.1)
+eyh.append(0.1)
+
+"""
+x   = np.array([-0.22, 0.05, 0.25, 0.35, 0.5, 0.61,0.7,0.85,0.89,0.95] )
+y   = np.array([1,2.9,5.6,7.4,9,9.6,8.7,6.3,4.5,1] )
+exl = np.array([.05,.1,.07,.07,.04,.05,.06,.07,.08,.05] )
+eyl = np.array([.8,.7,.6,.5,.4,.4,.5,.6,.7,.8] )
+exh = np.array([.02,.08,.05,.05,.03,.03,.04,.05,.06,.03] )
+eyh = np.array([.6,.5,.4,.3,.2,.2,.3,.4,.5,.6] )
+"""
+
+"""
+x   = [-0.22, 0.05, 0.25, 0.35, 0.5, 0.61,0.7,0.85,0.89,0.95] 
+y   = [1,2.9,5.6,7.4,9,9.6,8.7,6.3,4.5,1] 
+exl = [.05,.1,.07,.07,.04,.05,.06,.07,.08,.05] 
+eyl = [.8,.7,.6,.5,.4,.4,.5,.6,.7,.8] 
+exh = [.02,.08,.05,.05,.03,.03,.04,.05,.06,.03] 
+eyh = [.6,.5,.4,.3,.2,.2,.3,.4,.5,.6] 
+"""
+
+gr           = GAE(x,y,exl,exh,eyl,eyh) 
+gr.SetTitle('TGraphAsymmErrors') 
+gr.SetMarkerColor(4) 
+gr.SetMarkerStyle(21) 
+gr.Draw("ALP")
+
+
+
+
+
+
+
+
+ 
