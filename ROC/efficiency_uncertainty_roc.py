@@ -6,12 +6,19 @@ from   sklearn.externals   import joblib
 from   time                import sleep as slp
 from   time                import time
 
-n_scan  = 1000#10000000
+n_scan  = 10000000
 n_bins  = 1000#250#126#1000
 bin_i   = 0
 bin_f   = 1
 pth     = '/beegfs/desy/user/hezhiyua/LLP/bdt_output/result/Lisa/temp/'
-off_set = 0#0.0001#0.000000000008
+
+param           = {}
+param['n_scan'] = n_scan 
+param['n_bins'] = n_bins
+param['bin_i']  = bin_i
+param['bin_f']  = bin_f
+#param['']       =
+#param['']       =
 
 load_s = joblib.load(pth+'/dumps/s.pkl')
 load_b = joblib.load(pth+'/dumps/b.pkl')
@@ -61,7 +68,6 @@ for index, row in load_s.iterrows():
             for kk in xrange(k):
                 h_c_s.Fill(bin_value_dict[kk], tmp_weight)
     #if cc == n_scan: break
-    #h_true_positive.Fill(row['signal'], row['weight'])
     #cc += 1
 
 # cc is just there for testing purposes 
@@ -78,7 +84,6 @@ for index, row in load_b.iterrows():
                 h_c_b.Fill(bin_value_dict[kk], tmp_weight)  
 
     if cc == n_scan: break
-    #h_after_selection.Fill(row['signal'], row['weight'])
     cc += 1
 zeitB = time()
 print 'Time taken for filling histogram(for #events: ' + str(n_scan) + '): ', str(zeitB-zeitA)
@@ -214,6 +219,9 @@ from ROOT import Double
 g_size   = g_efficiency.GetN()
 g_size_s = g_tpr.GetN()
 
+print g_size
+print g_size_s
+
 x        = Double()
 y        = Double()
 
@@ -226,13 +234,13 @@ arr_y    = np.zeros(g_size)
 arr_x_s  = np.zeros(g_size_s)
 arr_y_s  = np.zeros(g_size_s)
 
-for i in range( g_size ):
+for i in xrange( g_size ):
     g_efficiency.GetPoint(i,x,y)
     arr_x[i] = x 
     arr_y[i] = y
 #print arr_y
 # if g_size is always equal to g_size_s we can put these loops together
-for i in range( g_size_s ):
+for i in xrange( g_size_s ):
     g_tpr.GetPoint(i,x_s,y_s)
     arr_x_s[i] = x_s 
     arr_y_s[i] = y_s
@@ -265,7 +273,32 @@ arr_h_s      = np.array(buffer_h_s, copy=True)
 print len(arr_h)
 print len(arr_l)
 
+#######################
+# Export ROC Position #
+#######################
+from sklearn.externals import joblib
 
+roc_dict              = {}
+roc_dict['param']     = param
+roc_dict['tpr']       = np.array(arr_y_s)
+roc_dict['fpr']       = np.array(arr_y)
+roc_dict['e_tpr_l']   = np.array(arr_l_s)
+roc_dict['e_fpr_l']   = np.array(arr_l)
+roc_dict['e_tpr_h']   = np.array(arr_h_s)
+roc_dict['e_fpr_h']   = np.array(arr_h)
+roc_dict['threshold'] = bin_value_dict
+#roc_dict['raw'] =
+
+path_dump = '/beegfs/desy/user/hezhiyua/2bBacked/roc_data/'
+name_dump = 'roc.pkl'
+
+joblib.dump(roc_dict, path_dump+name_dump)
+
+
+
+############
+# Draw ROC #
+############
 from array import array
 from ROOT  import gROOT
 from ROOT  import TPad
@@ -318,9 +351,9 @@ gr_sc.SetLineColor(4)
 
 c1.cd(1)
 gr.GetXaxis().SetRangeUser(0,0.5)
-gr.GetYaxis().SetRangeUser(0.000001,0.01)
+gr.GetYaxis().SetRangeUser(0.00001,0.01)
 gr_c.GetXaxis().SetRangeUser(0,0.5)
-gr_c.GetXaxis().SetRangeUser(0.000001,0.01)
+gr_c.GetXaxis().SetRangeUser(0.00001,0.01)
 
 gr_c.SetLineColor(4)
 
