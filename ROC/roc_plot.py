@@ -10,8 +10,6 @@ from sklearn.externals import joblib
 path_dump = '/beegfs/desy/user/hezhiyua/2bBacked/roc_data/'
 name_dump = 'roc.pkl'
 
-roc_dict = {}
-
 roc_dict = joblib.load(path_dump+name_dump)
 
 ############
