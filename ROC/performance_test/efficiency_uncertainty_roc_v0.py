@@ -6,8 +6,8 @@ from   sklearn.externals   import joblib
 from   time                import sleep as slp
 from   time                import time
 
-n_scan  = 1000#10000000
-n_bins  = 100#1000
+n_scan  = 10000000#10#1000#1000#10000000
+n_bins  = 100#4#100#100#1000
 bin_i   = 0
 bin_f   = 1
 pth     = '/beegfs/desy/user/hezhiyua/LLP/bdt_output/result/Lisa/temp/'
@@ -52,141 +52,117 @@ h_c_s = TH1F('h_c_s' , 'hist_true_positives_cum_rev'  , n_bins, bin_i, bin_f)
 
 ####################################
 ####################################
-####################################
 import root_numpy as rnp
+import multiprocessing as mp
 
-n_scan  = 1000
-n_bins  = 100
-
-
-
+print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Filling histogram...'
 zeitA = time()
 
-df_b = load_b.copy()[:n_scan]
-
-#df_b['in_bin']df_b.weight 
+df_b        = load_b.copy()[:n_scan]
 df_b['bin'] = df_b['signal']
+#df_s        = load_s.copy()
+#df_s['bin'] = df_s['signal']
 
-def bin_cut(xx):
-    bin_ind = None
-    for k in xrange(n_bins):
-        if ( bin_value_dict[k] - 0.5*bin_width <= xx.any() ) & ( bin_value_dict[k] + 0.5*bin_width > xx.any() ):
-            bin_ind = k
-    return bin_ind
+df_list_pre_sel = []
+df_list_pos_sel = []
+def Appnd(tupl_in):
+    df_list_pre_sel.append(tupl_in[0])
+    df_list_pos_sel.append(tupl_in[1])
 
-df_b['bin'] = df_b['bin'].apply( bin_cut )
+def DataFrameExpand(k):
+    mask_k_b = ( bin_value_dict[k] - 0.5*bin_width <= df_b['bin'] ) & ( bin_value_dict[k] + 0.5*bin_width > df_b['bin'] )
+    df_b['bin'][mask_k_b] = k
+    #mask_k_s = ( bin_value_dict[k] - 0.5*bin_width <= df_s['bin'] ) & ( bin_value_dict[k] + 0.5*bin_width > df_s['bin'] )
+    #df_s['bin'][mask_k_s] = k
+
+    mask_k = df_b.bin == k
+    df_b_w_k = df_b.weight[mask_k]
+
+    df_list_k_pre_sel = []
+    df_list_k_pos_sel = []
+    for kk in xrange(n_bins):
+        df_tmp_kk_pre_sel           = pd.DataFrame()
+        df_tmp_kk_pre_sel['weight'] = df_b_w_k
+        df_tmp_kk_pre_sel['bin']    = bin_value_dict[kk]
+        df_list_k_pre_sel.append(df_tmp_kk_pre_sel)
+        if kk > k: continue
+        df_tmp_kk_pos_sel           = pd.DataFrame()
+        df_tmp_kk_pos_sel['weight'] = df_b_w_k
+        df_tmp_kk_pos_sel['bin']    = bin_value_dict[kk]
+        df_list_k_pos_sel.append(df_tmp_kk_pos_sel)
+
+    df_tmp_k_pre_sel = pd.concat(df_list_k_pre_sel)
+    df_tmp_k_pos_sel = pd.concat(df_list_k_pos_sel)
+
+    return df_tmp_k_pre_sel, df_tmp_k_pos_sel
 
 
-print df_b['bin'][:14]
+pool_dfe = mp.Pool()
+for i in xrange(n_bins):
+    pool_dfe.apply_async(DataFrameExpand, args=(i, ), callback=Appnd)
+pool_dfe.close()
+pool_dfe.join()
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~alternatives:
+#process = mp.Process(target=F, args=(k,))
+#manager = mp.Manager()
+#pool.map(FT,L)
+
+df_before_selection = pd.concat(df_list_pre_sel)
+df_after_selection  = pd.concat(df_list_pos_sel)
+
+rnp.fill_hist(h_before_selection, df_before_selection.bin, df_before_selection.weight)
+rnp.fill_hist(h_c_b             , df_after_selection.bin , df_after_selection.weight)
 
 zeitB = time()
 print 'Time taken for filling histogram(for #events: ' + str(n_scan) + '): ', str(zeitB-zeitA)
-exit()
-
-
-
-
-
-weight_arr_b = np.array( df_b['weight'] )
-signal_arr_b = np.array( df_b['signal'] )
-
-h_tmp = TH1F('h_tmp', 'Temp', n_bins, bin_i, bin_f)
-
-rnp.fill_hist(h_tmp, signal_arr_b, weight_arr_b)
-
-
-
-
-#h_tmp = TH1F('h_tmp', 'Temp', n_bins, bin_i, bin_f)
-
-def selection(xx):
-    xx
-
-
-
-rnp.fill_hist(h_tmp, fp_arr, weight_fp_arr)
-
-
-
-zeitB = time()
-print 'Time taken for filling histogram(for #events: ' + str(n_scan) + '): ', str(zeitB-zeitA)
-
-
-
-
-
-
-
-
-old = 0
-if old == 1:
-    print 'starting old method'
-    zeitA = time()
-    for index, row in load_b.iterrows():
-        tmp_weight    = row['weight']
-        tmp_signal    = row['signal']
-        h_true.Fill(tmp_signal, tmp_weight)
-    
-    zeitB = time()
-    print 'Time taken for filling histogram(for #events: ' + str(n_scan) + '): ', str(zeitB-zeitA)
-
-exit()
-####################################
 ####################################
 ####################################
 
-'''
-print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>filling histogram...'
+
+
+print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Filling histogram (for tpr)...'
 zeitA = time()
-#for index, row in load_s.iterrows():
-#    tmp_weight    = row['weight']
-#    tmp_signal    = row['signal']
-
+for index, row in load_s.iterrows():
+    tmp_weight    = row['weight']
+    tmp_signal    = row['signal']
 # somehow slowest 
 #for i in load_s.index:
 #    tmp_weight = load_s.loc[i,'weight']
 #    tmp_signal = load_s.loc[i,'signal']
-
-    
-
-
     for k in xrange(n_bins):
         h_true.Fill(bin_value_dict[k], tmp_weight)
         if bin_value_dict[k] - 0.5*bin_width <= tmp_signal and bin_value_dict[k] + 0.5*bin_width > tmp_signal:
             for kk in xrange(k):
                 h_c_s.Fill(bin_value_dict[kk], tmp_weight)
+'''
+zeitA = time()
 # cc is just there for testing purposes 
 cc           = 0
-#for index, row in load_b.iterrows():
-#    tmp_weight    = row['weight']
-#    tmp_signal    = row['signal']
-
+for index, row in load_b.iterrows():
+    tmp_weight    = row['weight']
+    tmp_signal    = row['signal']
 #for i in load_b.index:
 #    tmp_weight = load_b.loc[i,'weight']
 #    tmp_signal = load_b.loc[i,'signal'] 
-
-
-
-
     for k in xrange(n_bins):
         h_before_selection.Fill(bin_value_dict[k], tmp_weight)
         if bin_value_dict[k] - 0.5*bin_width <= tmp_signal and bin_value_dict[k] + 0.5*bin_width > tmp_signal:
             for kk in xrange(k):
                 h_c_b.Fill(bin_value_dict[kk], tmp_weight)  
-
     if cc == n_scan: break
     cc += 1
 
 zeitB = time()
 print 'Time taken for filling histogram(for #events: ' + str(n_scan) + '): ', str(zeitB-zeitA)
 '''
-
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> for debugging:
 #canv1 = TCanvas()
 #canv1.SetLogy()
 #h_after_selection.Draw('HIST')
 #h_true_positive.Draw()
 #slp(22)
-
 #xaxis     = h_before_selection.GetXaxis()
 #xaxis     = h_c_b.GetXaxis()
 #binCenter = xaxis.GetBinCenter(1)
@@ -198,7 +174,7 @@ g_tpr = GAE()
 g_fpr.Divide(h_c_b, h_before_selection, "cl=0.683 b(1,1) mode")
 g_tpr.Divide(h_c_s, h_true            , "cl=0.683 b(1,1) mode")
 
-# for debugging:
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> for debugging:
 '''
 g_fpr.SetTitle('efficiency(fpr)')
 g_fpr.SetFillColor(5)
@@ -208,7 +184,6 @@ g_fpr.SetMarkerColor(4)
 #g_fpr.Draw('ALPE1')
 #g_fpr.Draw('3A')a
 #slp(33)
-
 g_tpr.SetTitle('True Positive Rate')
 g_tpr.SetFillColor(5)
 g_tpr.SetMarkerStyle(21)
@@ -285,7 +260,10 @@ roc_dict['e_fpr_l']   = np.array(arr_l)
 roc_dict['e_tpr_h']   = np.array(arr_h_s)
 roc_dict['e_fpr_h']   = np.array(arr_h)
 roc_dict['threshold'] = bin_value_dict
-#roc_dict['raw'] =
+#raw_data           = {}
+#raw_data['load_s'] = load_s
+#raw_data['load_b'] = load_b
+#roc_dict['raw'] = raw_data
 
 path_dump = '/beegfs/desy/user/hezhiyua/2bBacked/roc_data/'
 name_dump = 'roc.pkl'
@@ -364,5 +342,89 @@ gr_sc.Draw('SAME XLP')
 
 c1.Print('roc.png')
 c1.Update()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###########
+#         #
+# BackUps #
+#         #
+###########
+
+#=================================================================================================
+'''
+import root_numpy as rnp
+
+zeitA = time()
+
+df_b        = load_b.copy()[:n_scan]
+df_b['bin'] = df_b['signal']
+
+#df_s        = load_s.copy()
+#df_s['bin'] = df_s['signal']
+
+#for k in xrange(n_bins):
+#    mask_k_b = ( bin_value_dict[k] - 0.5*bin_width <= df_b['bin'] ) & ( bin_value_dict[k] + 0.5*bin_width > df_b['bin'] )
+#    df_b['bin'][mask_k_b] = k
+#    mask_k_s = ( bin_value_dict[k] - 0.5*bin_width <= df_s['bin'] ) & ( bin_value_dict[k] + 0.5*bin_width > df_s['bin'] )
+#    df_s['bin'][mask_k_s] = k
+
+df_list_pre_sel = []
+df_list_pos_sel = []
+for k in xrange(n_bins):
+ 
+    mask_k_b = ( bin_value_dict[k] - 0.5*bin_width <= df_b['bin'] ) & ( bin_value_dict[k] + 0.5*bin_width > df_b['bin'] )
+    df_b['bin'][mask_k_b] = k
+    #mask_k_s = ( bin_value_dict[k] - 0.5*bin_width <= df_s['bin'] ) & ( bin_value_dict[k] + 0.5*bin_width > df_s['bin'] )
+    #df_s['bin'][mask_k_s] = k
+
+    mask_k = df_b.bin == k
+    df_b_w_k = df_b.weight[mask_k]
+
+    df_list_k_pre_sel = []
+    df_list_k_pos_sel = []
+
+    for kk in xrange(n_bins):
+        df_tmp_kk_pre_sel           = pd.DataFrame()
+        df_tmp_kk_pre_sel['weight'] = df_b_w_k
+        df_tmp_kk_pre_sel['bin']    = bin_value_dict[kk]
+        df_list_k_pre_sel.append(df_tmp_kk_pre_sel)
+        if kk > k: continue
+        df_tmp_kk_pos_sel           = pd.DataFrame()
+        df_tmp_kk_pos_sel['weight'] = df_b_w_k
+        df_tmp_kk_pos_sel['bin']    = bin_value_dict[kk]
+        df_list_k_pos_sel.append(df_tmp_kk_pos_sel)
+
+    df_tmp_k_pre_sel = pd.concat(df_list_k_pre_sel)
+    df_tmp_k_pos_sel = pd.concat(df_list_k_pos_sel)
+    
+    df_list_pre_sel.append(df_tmp_k_pre_sel)
+    df_list_pos_sel.append(df_tmp_k_pos_sel)    
+
+df_before_selection = pd.concat(df_list_pre_sel)
+df_after_selection  = pd.concat(df_list_pos_sel)
+
+rnp.fill_hist(h_before_selection, df_before_selection.bin, df_before_selection.weight)
+rnp.fill_hist(h_c_b             , df_after_selection.bin , df_after_selection.weight)
+
+zeitB = time()
+print 'Time taken for filling histogram(for #events: ' + str(n_scan) + '): ', str(zeitB-zeitA)
+'''
+#=================================================================================================
+
+
+
 
 
