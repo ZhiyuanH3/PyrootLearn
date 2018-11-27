@@ -12,65 +12,96 @@ def plotROC(inDict):
 
     Colors      = ['red','green','blue','black','lime','goldenrod','slateblue','yellowgreen','navy','yellow']
     colors      = ['pink','lightgreen','paleturquoise','grey','greenyellow','wheat','plum','y','gold']
+    hatchs      = ['xx', '///', '||', '\\', '++', '---', '.']
     i           = 0
     orderedList = []
 
 
-    roc_series    = 0
+    roc_series    = 1#0
 
     if roc_series == 1:
         for dsci, dicti  in inDict.iteritems():
             orderedList.append(dsci)
         orderedList = sorted(orderedList)
+
         for dsci in orderedList:
-    
-            #auc_bdt = inDict[dsci]['aoc']
-            auc_bdt = inDict['aoc']
+            tmp_dict = inDict[dsci]['roc'] 
+            #auc_bdt = tmp_dict['aoc']
+            auc_bdt = inDict[dsci]['aoc']
     
             self_cut_base = 1
-            use_indp_roc  = 0
+            use_indp_roc  = 1
               
             if   use_indp_roc == 1: 
-                fpr_bdt = inDict['fpr']
-                tpr_bdt = inDict['tpr']
-                e_tpr_l = inDict['e_tpr_l']            
-                e_fpr_l = inDict['e_fpr_l']            
-                e_tpr_h = inDict['e_tpr_h']            
-                e_fpr_h = inDict['e_fpr_h']            
+                fpr_bdt = tmp_dict['fpr']
+                tpr_bdt = tmp_dict['tpr']
+                e_tpr_l = tmp_dict['e_tpr_l']            
+                e_fpr_l = tmp_dict['e_fpr_l']            
+                e_tpr_h = tmp_dict['e_tpr_h']            
+                e_fpr_h = tmp_dict['e_fpr_h']            
            
             elif use_indp_roc == 0:
                 fpr_bdt = inDict[dsci]['fpr']
                 tpr_bdt = inDict[dsci]['tpr']
-            plt.plot(tpr_bdt, fpr_bdt, label=dsci+", AOC=%.4f"%auc_bdt, color=colors[i])
-    
+            plt.plot(tpr_bdt, fpr_bdt, label=str(dsci)+", AOC=%.4f"%auc_bdt, color=Colors[i])
+            #plt.fill_between(tpr_bdt, fpr_bdt-e_fpr_l, fpr_bdt+e_fpr_h, alpha=0.7, color=colors[i], hatch=hatchs[i])      
+            plt.fill_between(tpr_bdt, fpr_bdt-e_fpr_l, fpr_bdt+e_fpr_h, facecolor='none', hatch=hatchs[i], edgecolor=colors[i]) 
+
             if self_cut_base == 1:
-                CBdict = inDict[dsci]['cut_base']
+                CBdict = inDict[dsci]['cut_based']
                 for dsci, dicti  in CBdict.iteritems():
-                    if 'H' in dsci: Marker = 'v'
+                    if 'H' in dsci: Marker = 'x'#'v'
                     else          : Marker = '.'     
-                    sgn_eff = dicti[0]
-                    fls_eff = dicti[1] 
-                    plt.plot(sgn_eff, fls_eff, 'or', label=dsci+': (TPR=%.3f,FPR=%.5f)'%(sgn_eff,fls_eff), color=colors[i], marker=Marker)
+                    sgn_eff = dicti['tpr']
+                    fls_eff = dicti['fpr']
+                   
+                    tpr_e_l = dicti['tpr_e_l']
+                    fpr_e_l = dicti['fpr_e_l']
+                    tpr_e_h = dicti['tpr_e_h']
+                    fpr_e_h = dicti['fpr_e_h']
+
+                    asym_e_x = [np.array([tpr_e_l]), np.array([tpr_e_h])]
+                    asym_e_y = [np.array([fpr_e_l]), np.array([fpr_e_h])]  
+
+                    Label = dsci+': (TPR=%.3f,FPR=%.5f)'%(sgn_eff,fls_eff)       
+                     
+                    
+                    if i == 1:    
+                        color_t = 'brown'#'black' 
+                        plt.plot(sgn_eff, fls_eff, 'or', label=Label, color=color_t, marker=Marker)
+                        plt.errorbar(sgn_eff, fls_eff, yerr=asym_e_y, fmt='none', color=color_t)    
+                    
+                    #plt.plot(sgn_eff, fls_eff, 'or', label=Label, color=colors[i], marker=Marker)
+                    #plt.errorbar(sgn_eff, fls_eff, yerr=asym_e_y, fmt='none', color=colors[i])
+
+                    #plt.plot(sgn_eff, fls_eff, 'or', label=None, color=colors[i], marker=Marker)
+                    #plt.errorbar(sgn_eff, fls_eff, xerr=asym_e_x, yerr=asym_e_y, fmt='none', color=colors[i])
+
+
             i += 1
 
-    ########################################################################
-    # Baysian Uncertainty
-    fpr     = np.asarray( inDict['fpr'] )
-    tpr     = np.asarray( inDict['tpr'] )
-    e_fpr_l = np.asarray( inDict['e_fpr_l'] )
-    e_fpr_h = np.asarray( inDict['e_fpr_h'] )
-    aoc     = np.asarray( inDict['aoc'] )
 
-    plt.plot(tpr, fpr, label='mass=50GeV'+", AOC=%.4f"%aoc, color='red')
-    plt.fill_between(tpr, fpr-e_fpr_l, fpr+e_fpr_h, alpha=0.3, color='green')
-    CBdict  = inDict['cut_base']
-    for dsci, dicti  in CBdict.iteritems():
-        if 'H' in dsci: Marker = 'v'
-        else          : Marker = '.'
-        sgn_eff = dicti[0]
-        fls_eff = dicti[1]
-        plt.plot(sgn_eff, fls_eff, 'or', label=dsci+': (TPR=%.3f,FPR=%.5f)'%(sgn_eff,fls_eff), color='blue', marker=Marker)
 
+
+    if 0:
+        ########################################################################
+        # Baysian Uncertainty
+        fpr     = np.asarray( inDict['fpr'] )
+        tpr     = np.asarray( inDict['tpr'] )
+        e_fpr_l = np.asarray( inDict['e_fpr_l'] )
+        e_fpr_h = np.asarray( inDict['e_fpr_h'] )
+        aoc     = np.asarray( inDict['aoc'] )
+    
+        plt.plot(tpr, fpr, label='mass=50GeV'+", AOC=%.4f"%aoc, color='red')
+        plt.fill_between(tpr, fpr-e_fpr_l, fpr+e_fpr_h, alpha=0.3, color='green')
+        CBdict  = inDict['cut_base']
+        for dsci, dicti  in CBdict.iteritems():
+            if 'H' in dsci: Marker = 'v'
+            else          : Marker = '.'
+            sgn_eff = dicti[0]
+            fls_eff = dicti[1]
+            plt.plot(sgn_eff, fls_eff, 'or', label=dsci+': (TPR=%.3f,FPR=%.5f)'%(sgn_eff,fls_eff), color='blue', marker=Marker)
+    
 
 
 def plotCuts(inDict):
@@ -137,34 +168,83 @@ if __name__ == '__main__':
  
     plot_on      =    1
     out_name     =    'test'
+    path         =    '/beegfs/desy/user/hezhiyua/LLP/bdt_output/result/Lisa/bdt_overview/res_with_cut_base/'   
     #path         =    '/beegfs/desy/user/hezhiyua/LLP/bdt_output/result/Lisa/temp/'
     #path         =    '/beegfs/desy/user/hezhiyua/LLP/bdt_output/result/Lisa/temp/forCompare/'
     path_out     =    '/beegfs/desy/user/hezhiyua/LLP/bdt_output/roc/'
-    path_dump    = '/beegfs/desy/user/hezhiyua/2bBacked/roc_data/'
-    name_dump    = 'roc.pkl'
+    #path_dump    = '/beegfs/desy/user/hezhiyua/2bBacked/roc_data/'
+    #name_dump    = 'roc.pkl'
 
+    
     fileNameDict = {
-                     'BDT()'       : 'result_with_pt_mass_energy_v1_withSelection.pickle',
-                     'bdt'         : 'result_v1_withSelection.pickle' 
+                     'BDT(2best+kin.)'       : 'res_kin_v2_withSelection_train_on_40_500mm_test_on_40_500mm_2best.pickle',
+                     'BDT(full+kin.)'        : 'res_kin_v2_withSelection_train_on_40_500mm_test_on_40_500mm_full.pickle', 
+                     'BDT(2best)'            : 'res_v2_withSelection_train_on_40_500mm_test_on_40_500mm_2best.pickle', 
+                     'BDT(full)'             : 'res_v2_withSelection_train_on_40_500mm_test_on_40_500mm_full.pickle',       
                    }
    
-    cutBaseDict  = {
-                      'Loose Cut': [0.127,0.00364],#[0.1955307262569827 , 0.003643577798535045],
-                      'Hard Cut' : [0.101,0.00061]#[0.15642458100558612, 0.0006177645800627758]
+    
+    fileNameDict = {
+                     'BDT(2best+kin.)'       : 'res_kin_v2_withSelection_train_on_40_500mm_test_on_50_500mm_2best.pickle',
+                     'BDT(full+kin.)'        : 'res_kin_v2_withSelection_train_on_40_500mm_test_on_50_500mm_full.pickle',
+                     'BDT(2best)'            : 'res_v2_withSelection_train_on_40_500mm_test_on_50_500mm_2best.pickle',
+                     'BDT(full)'             : 'res_v2_withSelection_train_on_40_500mm_test_on_50_500mm_full.pickle',      
                    }
     
+    fileNameDict = {
+                     'BDT(2best) --trained on 40GeV '       : 'res_v2_withSelection_train_on_40_500mm_test_on_50_500mm_2best.pickle',
+                     'BDT(2best) --trained on 50GeV'        : 'res_v2_withSelection_train_on_50_500mm_test_on_50_500mm_2best.pickle',
+                   }
+
+    
+    fileNameDict = {
+                     'BDT(2best+kin.)'       : 'res_kin_v2_withSelection_train_on_50_500mm_test_on_50_500mm_2best.pickle',
+                     'BDT(full+kin.)'        : 'res_kin_v2_withSelection_train_on_50_500mm_test_on_50_500mm_full.pickle',
+                     'BDT(2best)'            : 'res_v2_withSelection_train_on_50_500mm_test_on_50_500mm_2best.pickle',
+                     'BDT(full)'             : 'res_v2_withSelection_train_on_50_500mm_test_on_50_500mm_full.pickle',      
+                   }
+
+    fileNameDict = {
+                     'BDT(full+kin.) --trained on 40GeV '       : 'res_kin_v2_withSelection_train_on_40_500mm_test_on_50_500mm_full.pickle',
+                     'BDT(full+kin.) --trained on 50GeV'        : 'res_kin_v2_withSelection_train_on_50_500mm_test_on_50_500mm_full.pickle',
+                   }
+    '''
+
+    fileNameDict = {
+                     'BDT(2best+kin.) --trained on 40GeV '       : 'res_kin_v2_withSelection_train_on_40_500mm_test_on_50_500mm_2best.pickle',
+                     'BDT(2best+kin.) --trained on 50GeV'        : 'res_kin_v2_withSelection_train_on_50_500mm_test_on_50_500mm_2best.pickle',
+                   }
+    '''
+
     ####################################################################
+    '''
     roc_dict             = joblib.load(path_dump+name_dump)
     roc_dict['cut_base'] = cutBaseDict
-    roc_dict['aoc']      = 0.8934
+    roc_dict['aoc']      = 
     pklDict              = roc_dict
-    '''
+    
     pklDict  = {}
     pklDict['50'] = {}
     pklDict['50']['tpr']
     pklDict['50']['fpr']
     pklDict['50']['']
     '''
+
+    pklDict = {}
+
+    for key, item in fileNameDict.iteritems():
+        with open(path+item,'read') as ff:
+            pkls         = pickle.load(ff)
+            if 'test_on_50' in item:
+                feature      = pkls['masses'][50]#[40]
+            elif 'test_on_40' in item:
+                feature      = pkls['masses'][40]
+            pklDict[key] = feature
+    #print pklDict    
+            
+
+
+    cutBaseDict = {}
     ####################################################################
 
     if plot_on:
