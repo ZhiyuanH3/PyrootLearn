@@ -8,11 +8,11 @@ from ROOT import TH1F, TChain
 from ROOT import TCanvas
 from ROOT import Double
 import           root_numpy      as rnp
-import           multiprocessing as mp
+#import           multiprocessing as mp
 
 
 def ROC_GEN(load_s, load_b):
-    n_scan  = 100000#00
+    n_scan  = 1000000#0
     n_bins  = 100
     bin_i   = 0
     bin_f   = 1
@@ -99,14 +99,18 @@ def ROC_GEN(load_s, load_b):
     
         return df_tmp_k_pre_sel, df_tmp_k_pos_sel
     
-    
+   
+    # Parallelization:
+    ''' 
     pool_dfe = mp.Pool()
     for i in xrange(n_bins):
         pool_dfe.apply_async(DataFrameExpand, args=(i, ), callback=Appnd)
     pool_dfe.close()
     pool_dfe.join()
-    
-    
+    '''
+    for ii in xrange(n_bins):
+        callback = DataFrameExpand(ii)
+        Appnd(callback)
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~alternatives:
     #process = mp.Process(target=F, args=(k,))
     #manager = mp.Manager()
@@ -214,8 +218,8 @@ def ROC_GEN(load_s, load_b):
     roc_dict['threshold'] = bin_value_dict
     
     roc_dict['cut_based'] = {}
-    roc_dict['cut_based']['lc'] = LC_dict
-    roc_dict['cut_based']['hc'] = HC_dict
+    #roc_dict['cut_based']['lc'] = LC_dict
+    #roc_dict['cut_based']['hc'] = HC_dict
     #roc_dict['aoc']       = aoc
     #roc_dict['aoc_l']       = aoc_l
     #roc_dict['aoc_h']       = aoc_h
