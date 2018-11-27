@@ -1,37 +1,68 @@
 # first create some data
 import pandas as pd
 import numpy  as np
-import random 
+#import random 
 from   sklearn.externals   import joblib
 from   time                import sleep as slp
 from   time                import time
 
-n_scan  = 10000000#10#1000#1000#10000000
-n_bins  = 100#4#100#100#1000
+n_scan  = 100000#00
+n_bins  = 100
 bin_i   = 0
 bin_f   = 1
 pth     = '/beegfs/desy/user/hezhiyua/LLP/bdt_output/result/Lisa/temp/'
+#pth     = '/beegfs/desy/user/hezhiyua/LLP/bdt_output/result/Lisa/bdt_overview/dumps/trained_on/40_500mm/test_on/40_500mm/'
+draw    = 1
 
 param           = {}
 param['n_scan'] = n_scan 
 param['n_bins'] = n_bins
 param['bin_i']  = bin_i
 param['bin_f']  = bin_f
-
+print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Loading data...'
 load_s = joblib.load(pth+'/dumps/s.pkl')
 load_b = joblib.load(pth+'/dumps/b.pkl')
-#print load_s
+print len(load_b)
 
+
+sgn_ctauS = 500
+sgn_mass  = 40
+pth_cut   = '/beegfs/desy/user/hezhiyua/2bBacked/skimmed/Skim/fromLisa_forBDT/with_triggerBool/withNSelectedTracks/'
+pkls      = joblib.load(pth_cut+'/loadedDatas/'+'preloaded_data'+'_ctauS'+str(sgn_ctauS)+'_M'+str(sgn_mass)+'.pkl')
+load_df_test_orig = pkls['df_test_orig']
+#print load_df_test_orig[:10]
+LCL = {
+	'cHadEFrac'   :['<',0.2],
+	'cMulti'      :['<',10],
+	'nEmEFrac'    :['<',0.15],
+	'nHadEFrac'   :['>',0.8],
+	'photonEFrac' :['<',0.1],
+      }
+
+HCL = {
+	'cHadEFrac'   :['<',0.08],
+	'cMulti'      :['<',8],
+	'nEmEFrac'    :['<',0.08],
+	'nHadEFrac'   :['>',0.9],
+	'photonEFrac' :['<',0.08],
+	'ecalE'       :['<',10]
+      }
+
+
+# Calculate the bin vector:
 bin_width = float(bin_f - bin_i)/n_bins
 bin_value_dict = {}
 for j in xrange(n_bins):
     bin_value_dict[j] = bin_i + (0.5+j)*bin_width
 #print bin_value_dict
 
+
 from ROOT import TGraphAsymmErrors as GAE
 from ROOT import TH1F, TChain
 from ROOT import TCanvas
-
+from ROOT import Double
+import           root_numpy      as rnp
+import           multiprocessing as mp
 # if you want to use the GetCumulative() of a histogram and set its error: do not call the Sumw2() of it
 h_after_selection  = TH1F('h_after_selection' , 'hist_after_selection' , n_bins, bin_i, bin_f)
 #h_after_selection.Sumw2()
@@ -50,10 +81,150 @@ h_c_s = TH1F('h_c_s' , 'hist_true_positives_cum_rev'  , n_bins, bin_i, bin_f)
 
 
 
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+###################
+# Cut Base Points #
+###################
+def CutBaseBenchmarkNew(df_test_orig,inDict,JetPrfx_bkg,refAttr='pt',isSigAttrStr='is_signal',weightAttrStr='weight'):
+    refAttrLabel = JetPrfx_bkg + refAttr
+    tt           = df_test_orig.copy()
+    sg           = tt[isSigAttrStr]==1
+    bg           = tt[isSigAttrStr]==0
+
+    BA_l = {}
+    #pick out events that satisfiy the cut
+    for iAttr, iList in inDict.iteritems():
+        iAttr = 'J1'+iAttr
+        if   iList[0] == '<':    BA_l[iAttr] = tt[JetPrfx_bkg+iAttr] < iList[1]
+        elif iList[0] == '>':    BA_l[iAttr] = tt[JetPrfx_bkg+iAttr] > iList[1]
+
+    pos       = tt[refAttrLabel]
+    pos_sgn   = tt[weightAttrStr]
+    pos_bkg   = tt[weightAttrStr]
+    n_pos     = tt[weightAttrStr]
+    for iAttr, iList in inDict.iteritems():
+        iAttr     = 'J1'+iAttr
+        pos       = pos[ BA_l[iAttr] ]          #events that pass the selection(all the cuts)
+        pos_sgn   = pos_sgn[ BA_l[iAttr] ]      #signal events that pass the selection(all the cuts) 
+        pos_bkg   = pos_bkg[ BA_l[iAttr] ]      #background events that pass the selection(all the cuts)
+        n_pos     = n_pos[ BA_l[iAttr] ]        #see below
+    pos_sgn   = pos_sgn[ sg ]
+    pos_bkg   = pos_bkg[ bg ]
+    n_pos     = float( n_pos.sum() )            #sum up the weights
+
+    n_sgn        = float( tt[weightAttrStr][sg].sum() )    #sum of weights from all signal
+    n_bkg        = float( tt[weightAttrStr][bg].sum() )    #sum of weights from all background
+    n_pos_sgn    = float( pos_sgn.sum() )                  #sum of weights of signal events that pass the selection
+    n_pos_bkg    = float( pos_bkg.sum() )                  #sum of weights of background events that pass the selection
+    sgn_eff      = np.divide( n_pos_sgn , n_sgn )
+    fls_eff      = np.divide( n_pos_bkg , n_bkg )
+    print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Benchmark:'
+    print 'num of total test events: ',tt[refAttrLabel].count()
+    print "num of signals          : ",n_sgn
+    print 'num of background       : ',n_bkg
+    print "num of pos events       : ",n_pos
+    print "num of pos bkg          : ",n_pos_bkg
+    print "num of pos sgn          : ",n_pos_sgn
+    print "true positive rate      : ",sgn_eff
+    print "false positive rate     : ",fls_eff
+    return tt[weightAttrStr][sg], tt[weightAttrStr][bg], pos_sgn, pos_bkg#sgn_eff, fls_eff
+
+
+
+def CutBaseROC(df_sg, df_bg, df_pos_sgn, df_pos_bkg):
+
+    h_cut_pre_tpr = TH1F('h_cut_pre_tpr' , 'hist_cut_pre_tpr'  , 1, bin_i, bin_f)
+    h_cut_pos_tpr = TH1F('h_cut_pos_tpr' , 'hist_cut_pos_tpr'  , 1, bin_i, bin_f)
+    
+    h_cut_pre_fpr = TH1F('h_cut_pre_fpr' , 'hist_cut_pre_fpr'  , 1, bin_i, bin_f)
+    h_cut_pos_fpr = TH1F('h_cut_pos_fpr' , 'hist_cut_pos_fpr'  , 1, bin_i, bin_f)
+    
+    rnp.fill_hist(h_cut_pre_tpr          , df_sg      , df_sg)
+    rnp.fill_hist(h_cut_pos_tpr          , df_pos_sgn , df_pos_sgn)
+    
+    rnp.fill_hist(h_cut_pre_fpr          , df_bg      , df_bg)
+    rnp.fill_hist(h_cut_pos_fpr          , df_pos_bkg , df_pos_bkg)
+    
+    g_cut_tpr = GAE()
+    g_cut_fpr = GAE()
+    g_cut_tpr.Divide(h_cut_pos_tpr, h_cut_pre_tpr, "cl=0.683 b(1,1) mode")
+    g_cut_fpr.Divide(h_cut_pos_fpr, h_cut_pre_fpr, "cl=0.683 b(1,1) mode")
+        
+    g_size_cut  = 1
+    
+    x        = Double()
+    y        = Double()
+    x_s      = Double()
+    y_s      = Double()
+    
+    arr_x    = np.zeros(g_size_cut)
+    arr_y    = np.zeros(g_size_cut)
+    arr_x_s  = np.zeros(g_size_cut)
+    arr_y_s  = np.zeros(g_size_cut)
+    
+    for i in xrange( g_size_cut ):
+        g_cut_fpr.GetPoint(i,x,y)
+        arr_x[i]   = x
+        arr_y[i]   = y
+    
+        g_cut_tpr.GetPoint(i,x_s,y_s)
+        arr_x_s[i] = x_s
+        arr_y_s[i] = y_s
+    
+    buffer_l   = g_cut_fpr.GetEYlow()
+    buffer_l.SetSize(g_size_cut)
+    arr_l      = np.array(buffer_l, copy=True)
+    
+    buffer_h   = g_cut_fpr.GetEYhigh()
+    buffer_h.SetSize(g_size_cut)
+    arr_h      = np.array(buffer_h, copy=True)
+    
+    buffer_l_s   = g_cut_tpr.GetEYlow()
+    buffer_l_s.SetSize(g_size_cut)
+    arr_l_s      = np.array(buffer_l_s, copy=True)
+    
+    buffer_h_s   = g_cut_tpr.GetEYhigh()
+    buffer_h_s.SetSize(g_size_cut)
+    arr_h_s      = np.array(buffer_h_s, copy=True)
+    print len(arr_h)
+    print len(arr_l)
+    
+    print 'TPR: ', arr_y_s
+    print 'FPR: ', arr_y
+    print arr_l_s
+    print arr_l
+    print arr_h_s
+    print arr_h
+
+    out_dict = {}
+    out_dict['tpr'] = arr_y_s[0]
+    out_dict['fpr'] = arr_y[0]
+
+    out_dict['tpr_e_l'] = arr_l_s[0]
+    out_dict['fpr_e_l'] = arr_l[0]
+    out_dict['tpr_e_h'] = arr_h_s[0]
+    out_dict['fpr_e_h'] = arr_h[0]
+
+
+    return out_dict
+
+df_sg, df_bg, df_pos_sgn, df_pos_bkg = CutBaseBenchmarkNew(load_df_test_orig, LCL, 'Jet1s_', 'J1pt', 'is_signal', 'weight')
+LC_dict = CutBaseROC(df_sg, df_bg, df_pos_sgn, df_pos_bkg)
+
+df_sg, df_bg, df_pos_sgn, df_pos_bkg = CutBaseBenchmarkNew(load_df_test_orig, HCL, 'Jet1s_', 'J1pt', 'is_signal', 'weight')
+HC_dict = CutBaseROC(df_sg, df_bg, df_pos_sgn, df_pos_bkg)
+
+#exit()
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+
 ####################################
 ####################################
-import root_numpy as rnp
-import multiprocessing as mp
 
 print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Filling histogram...'
 zeitA = time()
@@ -193,19 +364,15 @@ g_tpr.SetMarkerColor(4)
 #slp(33)
 '''
 
-from ROOT import Double
-
 g_size   = g_fpr.GetN()
 
 x        = Double()
 y        = Double()
-
 x_s      = Double()
 y_s      = Double()
 
 arr_x    = np.zeros(g_size)
 arr_y    = np.zeros(g_size)
-
 arr_x_s  = np.zeros(g_size)
 arr_y_s  = np.zeros(g_size)
 
@@ -218,14 +385,6 @@ for i in xrange( g_size ):
     arr_x_s[i] = x_s 
     arr_y_s[i] = y_s
 
-# GetEYhigh() work as the following 3 ways(presumably the 'copy' version works most consistently):
-#----------------------------------------------V1
-#buffer_l = g_fpr.GetEYlow()
-#arr_l    = np.ndarray(g_size, 'f', buffer_l)
-#----------------------------------------------V2
-#buffer_h   = g_fpr.GetEYhigh()
-#arr_h      = np.frombuffer(buffer_h, count=g_size)
-#----------------------------------------------V3
 buffer_l   = g_fpr.GetEYlow()
 buffer_l.SetSize(g_size)
 arr_l      = np.array(buffer_l, copy=True)
@@ -246,6 +405,23 @@ arr_h_s      = np.array(buffer_h_s, copy=True)
 print len(arr_h)
 print len(arr_l)
 
+
+
+#######################
+# Calculate AOC       #
+#######################
+
+'''
+x   = np.array(arr_y_s)
+y   = np.array(arr_y)
+exl = np.array(arr_l_s)
+eyl = np.array(arr_l)
+exh = np.array(arr_h_s)
+eyh = np.array(arr_h)
+'''
+
+
+
 #######################
 # Export ROC Position #
 #######################
@@ -260,6 +436,14 @@ roc_dict['e_fpr_l']   = np.array(arr_l)
 roc_dict['e_tpr_h']   = np.array(arr_h_s)
 roc_dict['e_fpr_h']   = np.array(arr_h)
 roc_dict['threshold'] = bin_value_dict
+
+roc_dict['cut_based'] = {}
+roc_dict['cut_based']['lc'] = LC_dict
+roc_dict['cut_based']['hc'] = HC_dict
+#roc_dict['aoc']       = aoc
+#roc_dict['aoc_l']       = aoc_l
+#roc_dict['aoc_h']       = aoc_h
+
 #raw_data           = {}
 #raw_data['load_s'] = load_s
 #raw_data['load_b'] = load_b
@@ -274,74 +458,99 @@ joblib.dump(roc_dict, path_dump+name_dump)
 ############
 # Draw ROC #
 ############
-from array import array
-from ROOT  import gROOT
-from ROOT  import TPad
+if draw == 1:
+    from array import array
+    from ROOT  import gROOT
+    from ROOT  import TPad
+    
+    c1 = TCanvas('c1', 'Graph with asymmetric error band', 200, 10, 700, 500)
+    c1.Divide(2, 1, 0.)
+    p1 = c1.cd(1)
+    p2 = c1.cd(2)
+    
+    p1.SetLogy()
+    p1.SetGrid()
+    p1.SetFillColor(19)
+    
+    p2.SetGrid()
+    p2.SetFillColor(19)
+    
+    #c1.GetFrame().SetFillColor(21)
+    #c1.GetFrame().SetBorderSize(12)
+    
+    gROOT.SetBatch(1)
+    
+    x   = array('f')
+    y   = array('f')
+    exl = array('f')
+    eyl = array('f')
+    exh = array('f')
+    eyh = array('f')
+    
+    x   = np.array(arr_y_s)
+    y   = np.array(arr_y)
+    exl = np.array(arr_l_s)
+    eyl = np.array(arr_l)
+    exh = np.array(arr_h_s)
+    eyh = np.array(arr_h)
+    
+    # for cut based points:
+    x_c   = array('f')
+    y_c   = array('f')
+    exl_c = array('f')
+    eyl_c = array('f')
+    exh_c = array('f')
+    eyh_c = array('f')
 
-c1 = TCanvas('c1', 'Graph with asymmetric error band', 200, 10, 700, 500)
-c1.Divide(2, 1, 0.)
-p1 = c1.cd(1)
-p2 = c1.cd(2)
+    x_c   = np.array(LC_dict['tpr'])
+    y_c   = np.array(LC_dict['fpr'])
+    exl_c = np.array(LC_dict['tpr_e_l'])
+    eyl_c = np.array(LC_dict['fpr_e_l'])
+    exh_c = np.array(LC_dict['tpr_e_h'])
+    eyh_c = np.array(LC_dict['fpr_e_h'])
 
-p1.SetLogy()
-p1.SetGrid()
-p1.SetFillColor(19)
 
-p2.SetGrid()
-p2.SetFillColor(19)
+    # somehow if you call one of the variables before the Draw() method the graph won't work properly
+    gr    = GAE(n_bins,x,y,exl,exh,eyl,eyh)
+    gr_s  = GAE(n_bins,x,y,exl,exh,eyl,eyh)
+    
+    gr_LC = GAE(1,x_c,y_c,exl_c,exh_c,eyl_c,eyh_c) 
 
-#c1.GetFrame().SetFillColor(21)
-#c1.GetFrame().SetBorderSize(12)
+    gr_c  = gr.Clone()
+    gr_sc = gr_s.Clone()
+     
+    gr.SetTitle('ROC(zoomed in)') 
+    #gr.SetMarkerColor(8)
+    #gr.SetMarkerStyle(21)
+    gr.SetFillColor(632-9) 
+    gr_s.SetTitle('ROC')
+    gr_s.SetFillColor(632-9)
+    gr_sc.SetLineColor(4)
+    
+    c1.cd(1)
+    gr.GetXaxis().SetRangeUser(0,0.5)
+    gr.GetYaxis().SetRangeUser(0.00001,0.01)
+    gr_c.GetXaxis().SetRangeUser(0,0.5)
+    gr_c.GetXaxis().SetRangeUser(0.00001,0.01)
+    
+    gr_LC.GetXaxis().SetRangeUser(0,0.5)
+    gr_LC.GetYaxis().SetRangeUser(0.00001,0.01)
 
-gROOT.SetBatch(1)
 
-x   = array('f')
-y   = array('f')
-exl = array('f')
-eyl = array('f')
-exh = array('f')
-eyh = array('f')
+    gr_c.SetLineColor(4)
+    
+    gr.Draw('SAME 3A')
+    gr_c.Draw('SAME XLP')
 
-x   = np.array(arr_y_s)
-y   = np.array(arr_y)
-exl = np.array(arr_l_s)
-eyl = np.array(arr_l)
-exh = np.array(arr_h_s)
-eyh = np.array(arr_h)
+    gr_LC.Draw('SAME A')    
 
-# somehow if you call one of the variables before the Draw() method the graph won't work properly
-gr    = GAE(n_bins,x,y,exl,exh,eyl,eyh)
-gr_s  = GAE(n_bins,x,y,exl,exh,eyl,eyh)
-
-gr_c  = gr.Clone()
-gr_sc = gr_s.Clone()
- 
-gr.SetTitle('ROC(zoomed in)') 
-#gr.SetMarkerColor(8)
-#gr.SetMarkerStyle(21)
-gr.SetFillColor(632-9) 
-gr_s.SetTitle('ROC')
-gr_s.SetFillColor(632-9)
-gr_sc.SetLineColor(4)
-
-c1.cd(1)
-gr.GetXaxis().SetRangeUser(0,0.5)
-gr.GetYaxis().SetRangeUser(0.00001,0.01)
-gr_c.GetXaxis().SetRangeUser(0,0.5)
-gr_c.GetXaxis().SetRangeUser(0.00001,0.01)
-
-gr_c.SetLineColor(4)
-
-gr.Draw('SAME 3A')
-gr_c.Draw('SAME XLP')
-
-c1.cd(2)
-gr_s.Draw('SAME 3A')
-gr_sc.Draw('SAME XLP')
-#slp(2)
-
-c1.Print('roc.png')
-c1.Update()
+    c1.cd(2)
+    gr_s.Draw('SAME 3A')
+    gr_sc.Draw('SAME XLP')
+    slp(2)
+    
+    c1.Print('roc.png')
+    c1.Update()
 
 
 
@@ -422,6 +631,16 @@ rnp.fill_hist(h_c_b             , df_after_selection.bin , df_after_selection.we
 zeitB = time()
 print 'Time taken for filling histogram(for #events: ' + str(n_scan) + '): ', str(zeitB-zeitA)
 '''
+
+
+# GetEYhigh() work as the following 3 ways(presumably the 'copy' version works most consistently):
+#----------------------------------------------V1
+#buffer_l = g_fpr.GetEYlow()
+#arr_l    = np.ndarray(g_size, 'f', buffer_l)
+#----------------------------------------------V2
+#buffer_h   = g_fpr.GetEYhigh()
+#arr_h      = np.frombuffer(buffer_h, count=g_size)
+#----------------------------------------------V3
 #=================================================================================================
 
 
