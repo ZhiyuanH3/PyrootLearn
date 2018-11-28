@@ -12,8 +12,8 @@ import           root_numpy      as rnp
 
 
 def ROC_GEN(load_s, load_b):
-    n_scan  = 1000000#0
-    n_bins  = 100
+    n_scan  = 10000000
+    n_bins  = 300#100
     bin_i   = 0
     bin_f   = 1
     draw    = 1
