@@ -63,11 +63,11 @@ def plotROC(inDict):
                     asym_e_x = [np.array([tpr_e_l]), np.array([tpr_e_h])]
                     asym_e_y = [np.array([fpr_e_l]), np.array([fpr_e_h])]  
 
-                    Label = dsci+': (TPR=%.3f,FPR=%.5f)'%(sgn_eff,fls_eff)       
+                    Label = dsci+': (TPR=%.3f,FPR=%.5f)'%(sgn_eff,fls_eff) #.6     
                      
                     
-                    if i == 1:    
-                        color_t = 'brown'#'black' 
+                    if i == 0:    
+                        color_t = 'brown'
                         plt.plot(sgn_eff, fls_eff, 'or', label=Label, color=color_t, marker=Marker)
                         plt.errorbar(sgn_eff, fls_eff, yerr=asym_e_y, fmt='none', color=color_t)    
                     
@@ -123,7 +123,7 @@ def plotROC_main(pathOut,outName,cutBase_dict,pkl_dict):
         ax.set_yscale('log')
         #ax.set_xscale('log')
         axes = plt.gca()
-        axes.set_xlim([0.02,0.54])#0.02,0.44 
+        axes.set_xlim([0.02,0.54])#([0.0001,0.54])#([0.02,0.54])#0.02,0.44 
         axes.set_ylim([0.000001,0.1])#0.0001
         plotROC(pkl_dict)
         #plotCuts(cutBase_dict)
@@ -166,79 +166,52 @@ def plotROC_main(pathOut,outName,cutBase_dict,pkl_dict):
 ###########
 if __name__ == '__main__':
  
+    #import plot_samples
+    from plot_samples import fileName
+
     plot_on      =    1
     out_name     =    'test'
-    path         =    '/beegfs/desy/user/hezhiyua/LLP/bdt_output/result/Lisa/bdt_overview/res_with_cut_base/'   
-    #path         =    '/beegfs/desy/user/hezhiyua/LLP/bdt_output/result/Lisa/temp/'
-    #path         =    '/beegfs/desy/user/hezhiyua/LLP/bdt_output/result/Lisa/temp/forCompare/'
+    path         =    '/beegfs/desy/user/hezhiyua/LLP/bdt_output/result/Lisa/bdt_overview/'+'Selected1_2best_kin0/'   
+
+    path         =    '/beegfs/desy/user/hezhiyua/LLP/bdt_output/result/Lisa/bdt_overview/all/'
+ 
     path_out     =    '/beegfs/desy/user/hezhiyua/LLP/bdt_output/roc/'
     #path_dump    = '/beegfs/desy/user/hezhiyua/2bBacked/roc_data/'
     #name_dump    = 'roc.pkl'
+    fileNameDict = fileName   
 
-    
-    fileNameDict = {
-                     'BDT(2best+kin.)'       : 'res_kin_v2_withSelection_train_on_40_500mm_test_on_40_500mm_2best.pickle',
-                     'BDT(full+kin.)'        : 'res_kin_v2_withSelection_train_on_40_500mm_test_on_40_500mm_full.pickle', 
-                     'BDT(2best)'            : 'res_v2_withSelection_train_on_40_500mm_test_on_40_500mm_2best.pickle', 
-                     'BDT(full)'             : 'res_v2_withSelection_train_on_40_500mm_test_on_40_500mm_full.pickle',       
-                   }
    
-    
-    fileNameDict = {
-                     'BDT(2best+kin.)'       : 'res_kin_v2_withSelection_train_on_40_500mm_test_on_50_500mm_2best.pickle',
-                     'BDT(full+kin.)'        : 'res_kin_v2_withSelection_train_on_40_500mm_test_on_50_500mm_full.pickle',
-                     'BDT(2best)'            : 'res_v2_withSelection_train_on_40_500mm_test_on_50_500mm_2best.pickle',
-                     'BDT(full)'             : 'res_v2_withSelection_train_on_40_500mm_test_on_50_500mm_full.pickle',      
-                   }
-    
-    fileNameDict = {
-                     'BDT(2best) --trained on 40GeV '       : 'res_v2_withSelection_train_on_40_500mm_test_on_50_500mm_2best.pickle',
-                     'BDT(2best) --trained on 50GeV'        : 'res_v2_withSelection_train_on_50_500mm_test_on_50_500mm_2best.pickle',
-                   }
-
-    
-    fileNameDict = {
-                     'BDT(2best+kin.)'       : 'res_kin_v2_withSelection_train_on_50_500mm_test_on_50_500mm_2best.pickle',
-                     'BDT(full+kin.)'        : 'res_kin_v2_withSelection_train_on_50_500mm_test_on_50_500mm_full.pickle',
-                     'BDT(2best)'            : 'res_v2_withSelection_train_on_50_500mm_test_on_50_500mm_2best.pickle',
-                     'BDT(full)'             : 'res_v2_withSelection_train_on_50_500mm_test_on_50_500mm_full.pickle',      
-                   }
-
-    fileNameDict = {
-                     'BDT(full+kin.) --trained on 40GeV '       : 'res_kin_v2_withSelection_train_on_40_500mm_test_on_50_500mm_full.pickle',
-                     'BDT(full+kin.) --trained on 50GeV'        : 'res_kin_v2_withSelection_train_on_50_500mm_test_on_50_500mm_full.pickle',
-                   }
-    '''
-
-    fileNameDict = {
-                     'BDT(2best+kin.) --trained on 40GeV '       : 'res_kin_v2_withSelection_train_on_40_500mm_test_on_50_500mm_2best.pickle',
-                     'BDT(2best+kin.) --trained on 50GeV'        : 'res_kin_v2_withSelection_train_on_50_500mm_test_on_50_500mm_2best.pickle',
-                   }
-    '''
 
     ####################################################################
-    '''
-    roc_dict             = joblib.load(path_dump+name_dump)
-    roc_dict['cut_base'] = cutBaseDict
-    roc_dict['aoc']      = 
-    pklDict              = roc_dict
-    
-    pklDict  = {}
-    pklDict['50'] = {}
-    pklDict['50']['tpr']
-    pklDict['50']['fpr']
-    pklDict['50']['']
-    '''
-
     pklDict = {}
 
     for key, item in fileNameDict.iteritems():
         with open(path+item,'read') as ff:
             pkls         = pickle.load(ff)
-            if 'test_on_50' in item:
-                feature      = pkls['masses'][50]#[40]
-            elif 'test_on_40' in item:
+            """
+            if 'tstm_40' in item:
                 feature      = pkls['masses'][40]
+            #elif 'trnm_40' in item:
+            #    feature      = pkls['masses'][40]
+            """ 
+            #""" 
+            for i in pkls['masses']:
+                #print i
+                #if int(i) == 20: continue
+                #if int(i) == 30: continue
+                #if int(i) == 40: continue
+                #if int(i) == 50: continue
+                #if int(i) == 60: continue
+                feature      = pkls['masses'][i]
+            """ 
+            for i in pkls['ctau']:
+                #if int(i) == 100: continue
+                #if int(i) == 500: continue
+                #if int(i) == 1000: continue
+                #if int(i) == 2000: continue
+                #if int(i) == 5000: continue
+                feature      = pkls['ctau'][i]
+            """
             pklDict[key] = feature
     #print pklDict    
             
