@@ -125,8 +125,8 @@ def plotROC_main(pathOut,outName,cutBase_dict,pkl_dict):
         axes = plt.gca()
         axes.set_xlim([0.02,0.54])#([0.0001,0.54])#([0.02,0.54])#0.02,0.44 
         axes.set_ylim([0.000001,0.1])#0.0001
-        plotROC(pkl_dict)
-        #plotCuts(cutBase_dict)
+        
+
         plt.grid(True, which='both')
         #plt.legend( loc=4 , prop={'size': 15} )
         plt.title('ROC (zoomed in)', fontsize=24)
@@ -150,6 +150,55 @@ def plotROC_main(pathOut,outName,cutBase_dict,pkl_dict):
 
         fig.savefig(pathOut + outName + '.png', bbox_inches='tight')
 #########################################################################################
+
+
+
+def plotBDTsum(in_dict, pth_out):
+   
+    
+    for key_par, item_par in in_dict.iteritems():
+        for key_cut, item_cut in item_par.iteritems():
+            if   key_cut == 'Loose Cut':    k_c = 'lc'  
+            elif key_cut == 'Hard Cut' :    k_c = 'hc' 
+            for key_model, item_model in item_cut.iteritems():
+               
+                if key_model == 'full_kin1': continue
+                #if i_trn == 40        : continue
+                print key_model 
+         
+                x = item_model['test_var']
+                y = item_model['(1/FPR)|cut_TPR'] 
+                Label = ': (TPR=%.3f,FPR=%.5f)'%(1,1)     
+                plt.subplots_adjust(hspace=0.4)
+                fig = plt.figure(num=None, figsize=(16, 9), dpi=120, facecolor='w', edgecolor='k')
+        
+                ax = plt.subplot(121)
+                ax.set_yscale('log')
+                axes = plt.gca()
+                #axes.set_xlim([0.02,0.54]) 
+                #axes.set_ylim([0.000001,0.1])
+                plt.plot(x, y, 'or', label=Label)#, color=color_t, marker=Marker)                
+                plt.grid(True, which='both')
+                plt.legend( loc=4 , prop={'size': 15} )
+                plt.title('bdt_generalization_compare', fontsize=24)
+                plt.ylabel('(1/FPR)|cut_TPR', fontsize=20)
+                plt.xlabel('test_'+key_par, fontsize=20)
+        
+                plt.subplot(122)
+                plt.subplots_adjust(left=0, wspace=0.06)
+                plt.grid(True)
+                plt.legend( loc=2 , prop={'size': 15} ) #9#12#15
+                plt.title('R', fontsize=24)
+                #plt.ylabel('False Positive Rate', fontsize=20)
+                #plt.xlabel('True Positive Rate', fontsize=20)
+        
+                plt.close()
+                outName = key_par+'_'+k_c+'_'+key_model
+                           
+                fig.savefig(pth_out + outName + '.png', bbox_inches='tight')
+
+
+
 
 
 
@@ -197,7 +246,7 @@ if __name__ == '__main__':
     def find_nearest(array, value):
         array = np.asarray(array)
         idx = (np.abs(array - value)).argmin()
-        return array[idx]
+        return array[idx], idx
 
 
     mass_list    = [20,30,40,50,60]
@@ -219,80 +268,69 @@ if __name__ == '__main__':
             cc            += 1
 
     empty_log = []
-    out_dict = {}
-    for key, item in combi_dict.iteritems():
-        out_dict[item]   = {}
-        for p_typ in par_type:
-            out_dict[item][p_typ]                = {}
-            for ci in cut_type:
-                out_dict[item][p_typ][ci]                     = {}
-                #out_dict[item][p_typ][i]['test var']         = {}#2#np.ones(5)
-                #out_dict[item][p_typ][i]['1/FPR at cut_TPR'] = {}#3#np.ones(5)  
-             
-                if p_typ == 'mass':
-                    for m_trn in mass_list:
-                        for m_tst in mass_list:
-                            if item == 'full_kin1': continue
-                            file_to_look = 'res_'+'trn'+'_'+str(m_trn)+'GeV_500mm_'+'tst'+'_'+str(m_tst)+'GeV_500mm_Selected1_'+item+'_v0.pickle'
-                            print file_to_look 
-                            path_tot     = path + file_to_look
-                            in_dict      = read_pkl(path_tot, m_tst)
-                            if in_dict:
-                                roc_dict = in_dict['roc']   
+    out_dict  = {}
 
-                                fpr_bdt = roc_dict['fpr']
-			        tpr_bdt = roc_dict['tpr']
-			        e_tpr_l = roc_dict['e_tpr_l']
-			        e_fpr_l = roc_dict['e_fpr_l']
-			        e_tpr_h = roc_dict['e_tpr_h']
-			        e_fpr_h = roc_dict['e_fpr_h']
-                                #print tpr_bdt 
+
+    for p_typ in par_type:
+        out_dict[p_typ]         = {}
+        for ci in cut_type:
+            out_dict[p_typ][ci] = {}
+            for key, item in combi_dict.iteritems():
+                out_dict[p_typ][ci][item]   = {}
+
+                if   p_typ == 'mass':    par_list = mass_list
+                elif p_typ == 'ctau':    par_list = ctau_list 
+                for i_trn in par_list:
+                    for i_tst in par_list:
+                        if item == 'full_kin1': continue
+                        if i_trn == 40        : continue
+
+                        if   p_typ == 'mass':
+                            file_to_look = 'res_'+'trn'+'_'+str(i_trn)+'GeV_500mm_'+'tst'+'_'+str(i_tst)+'GeV_500mm_Selected1_'+item+'_v0.pickle'
+                        elif p_typ == 'ctau':    
+                            file_to_look = 'res_'+'trn'+'_'+str(40)+'GeV_'+str(i_trn)+'mm_'+'tst'+'_'+str(40)+'GeV_'+str(i_tst)+'mm_Selected1_'+item+'_v0.pickle'
+                        print file_to_look 
+                        path_tot     = path + file_to_look
+                        in_dict      = read_pkl(path_tot, i_tst)
+                        if in_dict:
+                            roc_dict = in_dict['roc']   
+
+                            fpr_bdt = roc_dict['fpr']
+		            tpr_bdt = roc_dict['tpr']
+		            e_tpr_l = roc_dict['e_tpr_l']
+		            e_fpr_l = roc_dict['e_fpr_l']
+		            e_tpr_h = roc_dict['e_tpr_h']
+		            e_fpr_h = roc_dict['e_fpr_h']
                                 
-                                cut_dict = in_dict['cut_based'] 
-                                #for dsci, dicti  in cut_dict.iteritems():
-                                #    print dsci  
-                                #if ci == 
-                                dicti   = cut_dict[ci] 
-			        sgn_eff = dicti['tpr']
-			        fls_eff = dicti['fpr']
-			        tpr_e_l = dicti['tpr_e_l']
-			        fpr_e_l = dicti['fpr_e_l']
-			        tpr_e_h = dicti['tpr_e_h']
-			        fpr_e_h = dicti['fpr_e_h']
+                            cut_dict = in_dict['cut_based'] 
+                            dicti    = cut_dict[ci] 
+			    sgn_eff  = dicti['tpr']
+			    fls_eff  = dicti['fpr']
+			    tpr_e_l  = dicti['tpr_e_l']
+			    fpr_e_l  = dicti['fpr_e_l']
+			    tpr_e_h  = dicti['tpr_e_h']
+			    fpr_e_h  = dicti['fpr_e_h']
     
-			        tmp_fpr = find_nearest(fpr_bdt, sgn_eff)
-			        out_dict[item][p_typ][ci]['test var']         = m_tst
-			        out_dict[item][p_typ][ci]['1/FPR at cut_TPR'] = 1/float(tmp_fpr)
+			    tmp_tpr, indx = find_nearest(tpr_bdt, sgn_eff)
+                            tmp_fpr       = fpr_bdt[indx]
+                            if tmp_fpr != 0: 
+                                inv_fpr       = 1/float(tmp_fpr) 
+                            else           :
+                                inv_fpr       = 0
+			    out_dict[p_typ][ci][item]['test_var']        = i_tst
+			    out_dict[p_typ][ci][item]['(1/FPR)|cut_TPR'] = inv_fpr
 
-
-                            else      :
-                                empty_log.append(file_to_look)
+                        else      :
+                            out_dict[p_typ][ci][item]['test var']        = 0
+                            out_dict[p_typ][ci][item]['(1/FPR)|cut_TPR'] = 0
+                            empty_log.append(file_to_look)
                                   
-
-
-
-
+    path_out = './plot/'
     print empty_log
-
+    print out_dict
 
     ####################################################################
-    pklDict = {}
-
-            
-
-
-    cutBaseDict = {}
     ####################################################################
-
-    
-
-
-
-
-
-
-
-
-    #if plot_on:
-    #    plotROC_main(path_out, out_name, cutBaseDict, pklDict)
+    if plot_on:
+        plotBDTsum(out_dict, path_out)
 
