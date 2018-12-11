@@ -1,15 +1,15 @@
-import pandas as pd
-import numpy  as np
+import pandas          as pd
+import numpy           as np
+import root_numpy      as rnp
+import multiprocessing as mp
 import random 
-from   sklearn.externals   import joblib
-from   time                import sleep as slp
-from   time                import time
-from   ROOT import TGraphAsymmErrors      as GAE
-from   ROOT import TH1F, TChain
-from   ROOT import TCanvas
-from   ROOT import Double
-import           root_numpy        as rnp
-import           multiprocessing   as mp
+from   sklearn.externals import joblib
+from   time              import sleep             as slp
+from   time              import time
+from   ROOT              import TGraphAsymmErrors as GAE
+from   ROOT              import TH1F, TChain
+from   ROOT              import TCanvas
+from   ROOT              import Double
 
 
 def SetBin(load,n_bins,bin_list):
