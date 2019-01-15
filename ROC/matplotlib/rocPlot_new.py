@@ -49,11 +49,8 @@ def plotROC(inDict):
 
             if self_cut_base == 1:
                 CBdict = inDict[dsci]['cut_based']
-                #for kk in CBdict:
-                #    print dsci
-                #    print CBdict[kk]
                 for dsci, dicti  in CBdict.iteritems():
-                    if 'h' in dsci: Marker = 'x'#'v'
+                    if 'H' in dsci: Marker = 'x'#'v'
                     else          : Marker = '.'     
                     sgn_eff = dicti['tpr']
                     fls_eff = dicti['fpr']
@@ -74,13 +71,6 @@ def plotROC(inDict):
                         plt.plot(sgn_eff, fls_eff, 'or', label=Label, color=color_t, marker=Marker)
                         plt.errorbar(sgn_eff, fls_eff, yerr=asym_e_y, fmt='none', color=color_t)    
                     
-                    multi_cuts = 1
-                    if multi_cuts:
-                        color_t = Colors[i]
-                        plt.plot(sgn_eff, fls_eff, 'or', label=Label, color=color_t, marker=Marker)
-                        plt.errorbar(sgn_eff, fls_eff, yerr=asym_e_y, fmt='none', color=color_t)
-
-
                     #plt.plot(sgn_eff, fls_eff, 'or', label=Label, color=colors[i], marker=Marker)
                     #plt.errorbar(sgn_eff, fls_eff, yerr=asym_e_y, fmt='none', color=colors[i])
 
@@ -133,8 +123,8 @@ def plotROC_main(pathOut,outName,cutBase_dict,pkl_dict):
         ax.set_yscale('log')
         #ax.set_xscale('log')
         axes = plt.gca()
-        axes.set_xlim([0.5,0.9])#([0.02,0.54])#([0.0001,0.54])#([0.02,0.54])#0.02,0.44 
-        axes.set_ylim([0.000001,0.2])#0.0001
+        axes.set_xlim([0.02,0.54])#([0.0001,0.54])#([0.02,0.54])#0.02,0.44 
+        axes.set_ylim([0.000001,0.1])#0.0001
         plotROC(pkl_dict)
         #plotCuts(cutBase_dict)
         plt.grid(True, which='both')
@@ -176,54 +166,43 @@ def plotROC_main(pathOut,outName,cutBase_dict,pkl_dict):
 ###########
 if __name__ == '__main__':
  
-    #import plot_samples
     from plot_samples import fileName
-    from sklearn.externals import joblib
 
     plot_on      =    1
     out_name     =    'test'
-    path         =    '/beegfs/desy/user/hezhiyua/LLP/bdt_output/result/Lisa/bdt_overview/'+'Selected1_2best_kin0/'   
+    path         =    '/beegfs/desy/user/hezhiyua/LLP/bdt_output/result/Brian/train_on_selected_QCD/' 
 
-    path         =    '/beegfs/desy/user/hezhiyua/LLP/bdt_output/result/Lisa/bdt_overview/all/'
- 
-    path         =    '/beegfs/desy/user/hezhiyua/LLP/bdt_output/result/Brian/train_on_selected_QCD/'
-    path_out     =    '/beegfs/desy/user/hezhiyua/LLP/bdt_output/result/Brian/train_on_selected_QCD/roc/'
+    #path         =    '/beegfs/desy/user/hezhiyua/LLP/bdt_output/result/Lisa/generalization_bdt/rs/'
+
+    #path         =    '/beegfs/desy/user/hezhiyua/LLP/bdt_output/result/Lisa/generalization_bdt/'
     #path_out     =    '/beegfs/desy/user/hezhiyua/LLP/bdt_output/roc/'
+    path_out      =   '/beegfs/desy/user/hezhiyua/LLP/bdt_output/result/Brian/train_on_selected_QCD/roc/'  
     #path_dump    = '/beegfs/desy/user/hezhiyua/2bBacked/roc_data/'
     #name_dump    = 'roc.pkl'
     fileNameDict = fileName   
 
+    fileNameDict = {
+                     #'tt': 'RS_trn_40GeV_500mm_tst_40GeV_5000mm_slct1_attr_full_kin1_v0.pkl',
+                     #'tt': 'RS_trn_40GeV_500mm_tst_40GeV_500mm_slct1_attr_full_kin1_v0.pkl', 
+                     #'tt': 'RS_trn_40GeV_5000mm_tst_40GeV_500mm_slct1_attr_full_kin1_v0.pkl',
+                     #'tt': 'RS_trn_40GeV_500mm_tst_40GeV_1000mm_slct1_attr_full_kin1_v0.pkl', 
+                     #'tt': 'RS_trn_50GeV_500mm_tst_40GeV_500mm_slct1_attr_full_kin1_v0.pkl', 
+                     #'tt': 'RS_trn_40GeV_5000mm_tst_40GeV_500mm_slct1_attr_full_kin1_v0.pkl',
+                     'tt': 'RS_trn_50GeV_5000mm_tst_40GeV_500mm_slct1_attr_full_kin0_v0.pkl',
+                   }
+
+
+
     def read_pkl(pth):
         pkls = joblib.load(pth)
         return pkls['data']
+
    
 
     ####################################################################
     pklDict = {}
-
-    """
-    for key, item in fileNameDict.iteritems():
-        with open(path+item,'read') as ff:
-            pkls         = pickle.load(ff)
-            for i in pkls['masses']:
-                #print i
-                #if int(i) == 20: continue
-                #if int(i) == 30: continue
-                #if int(i) == 40: continue
-                #if int(i) == 50: continue
-                #if int(i) == 60: continue
-                feature      = pkls['masses'][i]
-            pklDict[key] = feature
-    """
-    for key, item in fileNameDict.iteritems():
-        pkls = read_pkl(path+item) 
-        #for i in pkls['masses']:
-        #    feature      = pkls['masses'][i]
-        feature = pkls
-        pklDict[key] = feature
-
-    #print pklDict    
-            
+    
+    pklDict['tt'] = read_pkl(path+fileNameDict['tt'])
 
 
     cutBaseDict = {}

@@ -346,15 +346,11 @@ def plotBDTsum(in_dict, pth_out):
 ###########
 if __name__ == '__main__':
  
-    from plot_samples import fileName
     plot_on      =    1
     out_name     =    'test'
     path         =    '/beegfs/desy/user/hezhiyua/LLP/bdt_output/result/Lisa/generalization_bdt/rs/'
     path_out     =    '/beegfs/desy/user/hezhiyua/LLP/bdt_output/roc/'
    
-    fileNameDict = fileName   
-
-
     def read_pkl(pth):
         pkls = joblib.load(pth)        
         return pkls['data']
@@ -364,6 +360,21 @@ if __name__ == '__main__':
         array = np.asarray(array)
         idx = (np.abs(array - value)).argmin()
         return array[idx], idx
+
+
+
+    pkl = joblib.load(path+'RS_trn_40GeV_500mm_tst_40GeV_500mm_slct1_attr_full_kin1_v0.pkl')
+    thrshd  = pkl['data']['thresholds_bdt']
+    fpr_bdt = pkl['data']['fpr']
+
+    fpr_n, idx = find_nearest(fpr_bdt, 1/float(100000))
+    print fpr_n 
+    print thrshd[idx]
+
+    exit()
+
+
+
 
 
     mass_list    = [20,30,40,50,60]
@@ -438,6 +449,12 @@ if __name__ == '__main__':
                                 if sgn_eff != 0:  
 			            tmp_tpr, indx = find_nearest(tpr_bdt, sgn_eff)
                                     tmp_fpr       = fpr_bdt[indx]
+
+                                    if file_to_look=='RS_trn_40GeV_500mm_tst_40GeV_500mm_slct1_attr_full_kin1_v0.pkl':
+                                        print tmp_tpr
+                                        print tmp_fpr  
+
+
                                     if tmp_fpr != 0: 
                                         inv_fpr       = 1./float(tmp_fpr) 
                                         if tmp_fpr-e_fpr_l[indx] !=0:
