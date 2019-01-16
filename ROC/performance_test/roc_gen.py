@@ -1,6 +1,6 @@
 import pandas          as pd
 import numpy           as np
-import root_numpy      as rnp
+#import root_numpy      as rnp
 import multiprocessing as mp
 import random 
 from   sklearn.externals import joblib
@@ -16,12 +16,9 @@ def SetBin(load,n_bins,bin_list):
     df                  = load.copy()
     df['w2']            = df['weight'].copy().apply( np.square )
     group_w             = df.groupby(  pd.cut(df['signal'], bin_list)  )
-    #print group_w.groups
     df_g_w_s            =  ( group_w.sum() ).copy()
-    #print group_w.aggregate(np.sum)[:]
     df1                 = df_g_w_s[['weight']].copy()
     df1.fillna(0,inplace=True)
-    #df1['ii']          = range(len(df1))
     df1['w2']           = df1['weight'].apply( np.square )
     df2                 = df1.iloc[::-1]
     df2.loc[:, 'recum'] = df2['weight'].cumsum()
@@ -90,8 +87,6 @@ def ROC_GEN(load_s, load_b):
     param['n_bins'] = n_bins
     param['bin_i']  = bin_i
     param['bin_f']  = bin_f
-    #param['']       =
-    #param['']       =
     
     bin_width = float(bin_f - bin_i)/n_bins
     bin_value_dict = {}
@@ -138,10 +133,37 @@ def ROC_GEN(load_s, load_b):
 
 if __name__ == '__main__':
 
+    pth    = '/beegfs/desy/user/hezhiyua/2bBacked/skimmed/Skim/fromBrian_forLola/h5/2d/out/first_test2/'+'dumps/'
+    #pth     = '/beegfs/desy/user/hezhiyua/LLP/bdt_output/result/Lisa/temp/'
 
-    pth     = '/beegfs/desy/user/hezhiyua/LLP/bdt_output/result/Lisa/temp/'
-    load_s = joblib.load(pth+'/dumps/s.pkl')
-    load_b = joblib.load(pth+'/dumps/b.pkl')
+    def read_h5(Name):
+        input_filename = pth+Name
+        store          = pd.HDFStore(input_filename)
+        tb             = store.select('table')#              ,
+        #                              start = i_start      ,
+        #                              stop  = i_start + batch_size)
+    
+        #stb         = tb.iloc[:, :-3]
+        #stb         = np.array(stb)
+        return tb
+
+    load_s = read_h5('s.h5')
+    load_b = read_h5('b.h5')
+
+    #load_s = joblib.load(pth+'/dumps/s.pkl')
+    #load_b = joblib.load(pth+'/dumps/b.pkl')
+
+    #import pickle
+    #with open(pth+'/dumps/s.pkl','r') as fs:
+    #    load_s = pickle.load(fs)
+    #with open(pth+'/dumps/b.pkl','r') as fb:
+    #    load_b = pickle.load(fb)
+
+    #load_s = pd.read_pickle(pth+'/dumps/s.pkl')
+    #load_b = pd.read_pickle(pth+'/dumps/b.pkl')
+
+    
+
     roc_dict = ROC_GEN(load_s, load_b)    
 
 
@@ -200,10 +222,12 @@ if __name__ == '__main__':
     gr_sc.SetLineColor(4)
     
     c1.cd(1)
+    y_lim_min = 0.00001
+    y_lim_max = 0.5
     gr.GetXaxis().SetRangeUser(0,0.5)
-    gr.GetYaxis().SetRangeUser(0.00001,0.01)
+    gr.GetYaxis().SetRangeUser(y_lim_min,y_lim_max)
     gr_c.GetXaxis().SetRangeUser(0,0.5)
-    gr_c.GetXaxis().SetRangeUser(0.00001,0.01)
+    gr_c.GetXaxis().SetRangeUser(y_lim_min,y_lim_max)
     
     gr_c.SetLineColor(4)
     
