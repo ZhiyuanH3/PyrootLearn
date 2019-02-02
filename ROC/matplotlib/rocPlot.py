@@ -68,12 +68,12 @@ def plotROC(inDict):
 
                     Label = dsci+': (TPR=%.3f,FPR=%.5f)'%(sgn_eff,fls_eff) #.6     
                      
-                    
+                    """
                     if i == 0:    
                         color_t = 'brown'
                         plt.plot(sgn_eff, fls_eff, 'or', label=Label, color=color_t, marker=Marker)
                         plt.errorbar(sgn_eff, fls_eff, yerr=asym_e_y, fmt='none', color=color_t)    
-                    
+                    """
                     multi_cuts = 1
                     if multi_cuts:
                         color_t = Colors[i]
@@ -149,7 +149,7 @@ def plotROC_main(pathOut,outName,cutBase_dict,pkl_dict):
         #plotCuts(cutBase_dict)
         #plt.plot([0, 1], [0, 1], color='navy', lw=1, linestyle='--')
         plt.grid(True)
-        plt.legend( loc=2 , prop={'size': 15} ) #9#12#15
+        plt.legend( loc=2 , prop={'size': 11} ) #9#15#12
         plt.title('ROC', fontsize=24)
         #plt.ylabel('False Positive Rate', fontsize=20)
         plt.xlabel('True Positive Rate', fontsize=20)
@@ -176,7 +176,6 @@ def plotROC_main(pathOut,outName,cutBase_dict,pkl_dict):
 ###########
 if __name__ == '__main__':
  
-    #import plot_samples
     from plot_samples import fileName
     from sklearn.externals import joblib
 
@@ -201,20 +200,6 @@ if __name__ == '__main__':
     ####################################################################
     pklDict = {}
 
-    """
-    for key, item in fileNameDict.iteritems():
-        with open(path+item,'read') as ff:
-            pkls         = pickle.load(ff)
-            for i in pkls['masses']:
-                #print i
-                #if int(i) == 20: continue
-                #if int(i) == 30: continue
-                #if int(i) == 40: continue
-                #if int(i) == 50: continue
-                #if int(i) == 60: continue
-                feature      = pkls['masses'][i]
-            pklDict[key] = feature
-    """
     for key, item in fileNameDict.iteritems():
         pkls = read_pkl(path+item) 
         #for i in pkls['masses']:

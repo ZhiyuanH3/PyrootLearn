@@ -2,3 +2,8 @@
 *.pdf
 *.png
 *.pyc
+*.pkl
+*.pickle
+*.dat
+
+
